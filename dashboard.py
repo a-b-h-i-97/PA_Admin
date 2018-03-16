@@ -14,9 +14,10 @@ import sys
 import traceback
 import json
 from datetime import datetime
+import csv
 import dash_utils
 
-cred = credentials.Certificate('./admin-PA.json')
+cred = credentials.Certificate('/home/adilash/Downloads/admin-PA.json')
 
 firebase_admin.initialize_app(cred, {
     'databaseURL': 'https://project-allocator.firebaseio.com/',
@@ -56,7 +57,9 @@ def manage_users():
 			print ("\nEnter 1 to add student")
 			print ("Enter 2 to remove student")
 			print ("Enter 3 to edit student")
-			print ("Enter 4 to exit")
+			print ("Enter 4 to batch upload")
+			print ("Enter 5 to view student details")
+			print ("Enter 0 to exit")
 			choice = raw_input()
 
 			db_ref_string = 'Student/%s'           #Student/uid
@@ -232,10 +235,56 @@ def manage_users():
 					print "\nError! Invalid input.\n"
 					continue
 
+			elif choice ==4:
+				filename=raw_input("Enter file name :")
+				rows=[]
+				with open(filename, 'r') as csvfile:
+					csvreader=csv.reader(csvfile)
 
-
+					for row in csvreader:
+						rows.append(row)
 				
-			elif choice == 4:
+				for row in rows:
+					print(row[0]+' '+row[1])
+					try:
+		
+						user = auth.create_user(
+	    					email = row[2],
+	    					email_verified = True,
+	    					password = row[0],
+	    					disabled=False)
+		
+						data = {
+		
+							'nameof' : row[1],
+							'personalemail' : row[4],
+							'rollnumber' : row[0],
+							'phonenumber' : row[3],
+							'uid' : user.uid,
+							'groupid' : ''
+						}
+		
+						db_ref = db.reference(db_ref_string % user.uid)
+						db_ref.set(data)
+						print('\n',row[0],' added successfully')
+
+					except firebase_admin.auth.AuthError as error:
+						print('')
+						print error.code
+						#traceback.print_exc()
+						continue
+					except ValueError as error:
+						print('')
+						print error
+						#traceback.print_exc()
+						continue	
+					except:
+						network_error()
+			elif choice == 5:
+				db_ref_string= 'Student'
+				
+
+			elif choice == 0:
 				break
 			else:
 				print "\nError! Invalid input.\n"
